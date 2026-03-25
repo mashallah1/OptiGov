@@ -1,0 +1,7 @@
+{
+  "proposal": "Test proposal",
+  "authorized_voters": ["0xbFE12c2E29cC49706990144384E076E9B69E81EB"],
+  "quorum": 3,
+  "max_length": 1000,
+  "max_hashtags": 10
+}
