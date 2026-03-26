@@ -1,21 +1,20 @@
 {
   "type": "commonjs",
-  "name": "optigov",
+  "name": "optigov-backend",
   "version": "1.0.0",
   "description": "",
-  "main": "touch backend.js",
+  "main": "backend.js",
   "scripts": {
+    "start": "node backend.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@tailwindcss/vite": "^4.2.2",
-    "axios": "^1.13.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
-    "tailwindcss": "^4.2.2",
+    "genlayer": "^0.1.0",
     "viem": "^2.47.6"
   }
 }

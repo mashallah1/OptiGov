@@ -108,6 +108,29 @@ app.post("/vote", async (req, res) => {
     }
 });
 
+// ✅ POST challenge
+app.post("/challenge", async (req, res) => {
+    try {
+        const account = privateKeyToAccount(process.env.PRIVATE_KEY);
+
+        await client.writeContract({
+            address: CONTRACT_ADDRESS,
+            functionName: "challenge",
+            args: [],
+            account
+        });
+
+        cachedState.challenged = true;
+
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 // ✅ POST finalize
 app.post("/finalize", async (req, res) => {
     try {
