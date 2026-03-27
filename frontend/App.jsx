@@ -48,14 +48,12 @@ function App() {
         <WalletButton />
       </header>
         {isConnected ? (
-          <p>Welcome! Your wallet {account} is connected.</p>
-        ) : (
-          <p>Please connect your wallet to participate in governance.</p>
-        )}
+          <div>
+            <p>Welcome! Your wallet {account} is connected.</p>
           </div>
         ) : (
           <button
-            onClick={connectWallet}
+            onClick={connect}
             className="bg-blue-600 px-4 py-2 rounded-xl hover:bg-blue-500"
           >
             Connect Wallet
