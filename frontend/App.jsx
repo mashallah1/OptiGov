@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import axios from "axios"
-import { usewallet, WalletButton } from "./usewallet";
+import { useWallet, WalletButton } from "./usewallet";
 import deployment from "./deployment.json"
 const API = "http://localhost:3000"
 
@@ -10,7 +10,7 @@ function App() {
   // 📊 Fetch status
   const fetchStatus = async () => {
     const res = await axios.get(`${API}/status`)
-    setStatus_msg(res.data.data || res.data)
+    setStatus_msg(res.data.data || res.data);
   }
 
   // 🤖 Evaluate
