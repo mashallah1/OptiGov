@@ -1,33 +1,12 @@
 import { useEffect, useState } from "react"
 import axios from "axios"
-import { createWalletClient, custom } from "viem"
-import { mainnet } from "viem/chains"
+import { usewallet, WalletButton } from "./usewallet";
 import deployment from "./deployment.json"
 const API = "http://localhost:3000"
 
 function App() {
-  const [status, setStatus] = useState(null)
-  const [account, setAccount] = useState(null)
-  const [walletClient, setWalletClient] = useState(null)
-
-  // 🔌 Connect Wallet
-  const connectWallet = async () => {
-    if (!window.ethereum) {
-      alert("Install MetaMask")
-      return
-    }
-
-    const client = createWalletClient({
-      chain: mainnet,
-      transport: custom(window.ethereum)
-    })
-
-    const [address] = await client.requestAddresses()
-
-    setAccount(address)
-    setWalletClient(client)
-  }
-
+  const [account, isConnected, status] = useWallet()
+  const [status_msg, setStatus_msg] = useState(null);
   // 📊 Fetch status
   const fetchStatus = async () => {
     const res = await axios.get(`${API}/status`)
@@ -63,15 +42,16 @@ function App() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-6">
-      
-      {/* HEADER */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">🧠 OptiGov</h1>
-
-        {account ? (
-          <div className="bg-slate-800 px-4 py-2 rounded-xl text-sm">
-            {account.slice(0,6)}...{account.slice(-4)}
+    <div className="container">      
+      <header>
+        <h1>OptiGov</h1>
+        <WalletButton />
+      </header>
+        {isConnected ? (
+          <p>Welcome! Your wallet {account} is connected.</p>
+        ) : (
+          <p>Please connect your wallet to participate in governance.</p>
+        )}
           </div>
         ) : (
           <button
