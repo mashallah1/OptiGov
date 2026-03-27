@@ -65,13 +65,13 @@ function App() {
       {status && (
         <div className="bg-slate-900 p-6 rounded-2xl shadow-lg mb-6">
           <h2 className="text-xl font-semibold mb-2">Proposal</h2>
-          <p className="mb-4 text-slate-300">{status.proposal}</p>
+          <p className="mb-4 text-slate-300">{status_msg.status}</p>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>Decision: <b>{status.decision}</b></div>
-            <div>Votes: <b>{status.votes}</b></div>
-            <div>Finalized: {status.finalized ? "✅" : "❌"}</div>
-            <div>Challenged: {status.challenged ? "⚠️" : "❌"}</div>
+            <div>Decision: <b>{status_msg.decision}</b></div>
+            <div>Votes: <b>{status_msg.votes}</b></div>
+            <div>Finalized: {status_msg.finalized ? "✅" : "❌"}</div>
+            <div>Challenged: {status_msg.challenged ? "⚠️" : "❌"}</div>
           </div>
         </div>
       )}
