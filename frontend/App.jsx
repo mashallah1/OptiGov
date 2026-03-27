@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import axios from "axios"
 import { createWalletClient, custom } from "viem"
 import { mainnet } from "viem/chains"
-
+import deployment from "../deployment.json" // 
 const API = "http://localhost:3000"
 
 function App() {
