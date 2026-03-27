@@ -5,7 +5,7 @@ import deployment from "./deployment.json"
 const API = "http://localhost:3000"
 
 function App() {
-  const { account, isConnected, status } = useWallet()
+  const { account, isConnected, connect } = useWallet()
   const [status_msg, setStatus_msg] = useState(null);
   // 📊 Fetch status
   const fetchStatus = async () => {
@@ -59,10 +59,9 @@ function App() {
             Connect Wallet
           </button>
         )}
-      </div>
 
       {/* CARD */}
-      {status && (
+      {status_msg && (
         <div className="bg-slate-900 p-6 rounded-2xl shadow-lg mb-6">
           <h2 className="text-xl font-semibold mb-2">Proposal</h2>
           <p className="mb-4 text-slate-300">{status_msg.status}</p>
