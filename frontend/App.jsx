@@ -5,12 +5,12 @@ import deployment from "./deployment.json"
 const API = "http://localhost:3000"
 
 function App() {
-  const [account, isConnected, status] = useWallet()
+  const { account, isConnected, status } = useWallet()
   const [status_msg, setStatus_msg] = useState(null);
   // 📊 Fetch status
   const fetchStatus = async () => {
     const res = await axios.get(`${API}/status`)
-    setStatus(res.data.data || res.data)
+    setStatus_msg(res.data.data || res.data)
   }
 
   // 🤖 Evaluate
