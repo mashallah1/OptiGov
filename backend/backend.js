@@ -16,9 +16,9 @@ const client = createClient({
 
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;
 
-// 🧠 fallback state (since readContract is broken)
-let cachedState = {
-    proposal: "Test proposal",
+// fallback state
+let state = {
+    proposal: "No proposal yet",
     decision: 0,
     votes: 0,
     finalized: false,
@@ -37,14 +37,14 @@ app.get("/status", async (req, res) => {
 
             const parsed = typeof data === "string" ? JSON.parse(data) : data;
 
-            cachedState = parsed; // update cache if works
+            state = parsed; // update cache if works
 
             return res.json({ success: true, data: parsed });
         } catch (rpcError) {
-            // 🔥 fallback if RPC fails
+            // fallback if RPC fails
             return res.json({
                 success: true,
-                data: cachedState,
+                data: state,
                 fallback: true
             });
         }
@@ -59,6 +59,8 @@ app.get("/status", async (req, res) => {
 // ✅ POST evaluate
 app.post("/evaluate", async (req, res) => {
     try {
+        const { proposal } = req.body;
+        state.proposal = proposal || state.proposal;
         const account = privateKeyToAccount(process.env.PRIVATE_KEY);
 
         const hash = await client.writeContract({
@@ -69,11 +71,12 @@ app.post("/evaluate", async (req, res) => {
         });
 
         // update mock state
-        cachedState.decision = 1;
+        state.decision = 1;
 
         res.json({
             success: true,
-            transactionHash: hash
+            transactionHash: hash,
+            state
         });
     } catch (error) {
         res.status(500).json({
@@ -88,6 +91,8 @@ app.post("/vote", async (req, res) => {
     try {
         const { decision } = req.body;
 
+        state.decision = decision;
+
         const account = privateKeyToAccount(process.env.PRIVATE_KEY);
 
         await client.writeContract({
@@ -97,9 +102,9 @@ app.post("/vote", async (req, res) => {
             account
         });
 
-        cachedState.votes += 1;
+        state.votes += 1;
 
-        res.json({ success: true });
+        res.json({ success: true, state });
     } catch (error) {
         res.status(500).json({
             success: false,
@@ -111,6 +116,7 @@ app.post("/vote", async (req, res) => {
 // ✅ POST challenge
 app.post("/challenge", async (req, res) => {
     try {
+        state.challenged = true
         const account = privateKeyToAccount(process.env.PRIVATE_KEY);
 
         await client.writeContract({
@@ -120,9 +126,9 @@ app.post("/challenge", async (req, res) => {
             account
         });
 
-        cachedState.challenged = true;
+        state.challenged = true;
 
-        res.json({ success: true });
+        res.json({ success: true, state });
     } catch (error) {
         res.status(500).json({
             success: false,
@@ -134,6 +140,7 @@ app.post("/challenge", async (req, res) => {
 // ✅ POST finalize
 app.post("/finalize", async (req, res) => {
     try {
+        state.finalized = true;
         const account = privateKeyToAccount(process.env.PRIVATE_KEY);
 
         await client.writeContract({
@@ -143,9 +150,9 @@ app.post("/finalize", async (req, res) => {
             account
         });
 
-        cachedState.finalized = true;
+        state.finalized = true;
 
-        res.json({ success: true });
+        res.json({ success: true, state });
     } catch (error) {
         res.status(500).json({
             success: false,
