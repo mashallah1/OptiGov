@@ -1,38 +1,29 @@
 import { useState, useCallback, useEffect } from "react";
-import { createWalletClient, custom } from "viem";
+import { createWalletClient, createPublicClient, custom } from "viem";
+import {
+  mainnet,
+  polygon,
+  arbitrum,
+  optimism,
+  base,
+  sepolia,
+  bsc,
+} from "viem/chains";
 
-// ─── GenLayer Bradbury Testnet Config ────────────────────────────────────────
+// ─── Supported EVM Chains ─────────────────────────────────────────────────────
+// Add or remove chains here as needed.
 
-const genlayerBradbury = {
-  id: 1337, // ⚠️ REPLACE with real chainId if different
-  name: "GenLayer Bradbury Testnet",
-  network: "genlayer-bradbury",
-  nativeCurrency: {
-    name: "GEN",
-    symbol: "GEN",
-    decimals: 18,
-  },
-  rpcUrls: {
-    default: {
-      http: ["https://rpc.bradbury.genlayer.com"], // ⚠️ confirm
-    },
-  },
-  blockExplorers: {
-    default: {
-      name: "GenLayer Explorer",
-      url: "https://explorer.bradbury.genlayer.com", // ⚠️ confirm
-    },
-  },
-  testnet: true,
+export const SUPPORTED_CHAINS = {
+  [mainnet.id]: mainnet,
+  [polygon.id]: polygon,
+  [arbitrum.id]: arbitrum,
+  [optimism.id]: optimism,
+  [base.id]: base,
+  [bsc.id]: bsc,
+  [sepolia.id]: sepolia,
 };
 
-// ─── Supported Chains (STRICT) ───────────────────────────────────────────────
-
-const SUPPORTED_CHAINS = {
-  [genlayerBradbury.id]: genlayerBradbury,
-};
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const getProvider = () => {
   if (typeof window === "undefined") return null;
@@ -42,43 +33,53 @@ const getProvider = () => {
 const shortenAddress = (addr) =>
   addr ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : "";
 
-// ─── Hook ────────────────────────────────────────────────────────────────────
+// ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export const useWallet = () => {
   const [account, setAccount] = useState(null);
   const [walletClient, setWalletClient] = useState(null);
+  const [publicClient, setPublicClient] = useState(null);
+  const [chain, setChain] = useState(null);
   const [chainId, setChainId] = useState(null);
-  const [status, setStatus] = useState("idle");
+  const [status, setStatus] = useState("idle"); // idle | connecting | connected | error
   const [error, setError] = useState(null);
 
-  const createClient = useCallback((provider, account, chainId) => {
-    const chain = SUPPORTED_CHAINS[chainId];
-    if (!chain) return null;
+  // Builds both wallet + public clients for a given provider/address/chain
+  const buildClients = useCallback((provider, address, numericChainId) => {
+    const chainDef = SUPPORTED_CHAINS[numericChainId] ?? { id: numericChainId };
 
-    return createWalletClient({
-      account,
-      chain,
+    const wallet = createWalletClient({
+      account: address,
+      chain: chainDef,
       transport: custom(provider),
     });
+
+    const pub = createPublicClient({
+      chain: chainDef,
+      transport: custom(provider),
+    });
+
+    return { wallet, pub, chainDef };
   }, []);
 
-  // ── Disconnect ────────────────────────────────────────────────────────────
+  // ── Disconnect ───────────────────────────────────────────────────────────
 
   const disconnect = useCallback(() => {
     setAccount(null);
     setWalletClient(null);
+    setPublicClient(null);
+    setChain(null);
     setChainId(null);
     setStatus("idle");
     setError(null);
-
     localStorage.removeItem("walletConnected");
   }, []);
 
-  // ── Switch Chain (AUTO ADD) ───────────────────────────────────────────────
+  // ── Switch Chain ─────────────────────────────────────────────────────────
 
   const switchChain = useCallback(async (targetChainId) => {
     const provider = getProvider();
-    if (!provider) return;
+    if (!provider) throw new Error("No wallet provider found.");
 
     try {
       await provider.request({
@@ -86,22 +87,27 @@ export const useWallet = () => {
         params: [{ chainId: `0x${targetChainId.toString(16)}` }],
       });
     } catch (err) {
+      // Error 4902 = chain not added to the wallet yet — add it automatically
       if (err?.code === 4902) {
-        const chain = SUPPORTED_CHAINS[targetChainId];
-        if (!chain) return;
+        const chainDef = SUPPORTED_CHAINS[targetChainId];
+        if (!chainDef) throw new Error(`Chain ${targetChainId} is not configured.`);
 
         await provider.request({
           method: "wallet_addEthereumChain",
           params: [
             {
-              chainId: `0x${chain.id.toString(16)}`,
-              chainName: chain.name,
-              nativeCurrency: chain.nativeCurrency,
-              rpcUrls: chain.rpcUrls.default.http,
-              blockExplorerUrls: [chain.blockExplorers.default.url],
+              chainId: `0x${chainDef.id.toString(16)}`,
+              chainName: chainDef.name,
+              nativeCurrency: chainDef.nativeCurrency,
+              rpcUrls: chainDef.rpcUrls.default.http,
+              blockExplorerUrls: chainDef.blockExplorers
+                ? [chainDef.blockExplorers.default.url]
+                : [],
             },
           ],
         });
+      } else {
+        throw err;
       }
     }
   }, []);
@@ -115,7 +121,7 @@ export const useWallet = () => {
     const provider = getProvider();
 
     if (!provider) {
-      setError("No wallet detected. Install MetaMask.");
+      setError("No wallet detected. Please install MetaMask or another EVM wallet.");
       setStatus("error");
       return;
     }
@@ -125,17 +131,12 @@ export const useWallet = () => {
       const rawChainId = await provider.request({ method: "eth_chainId" });
       const numericChainId = parseInt(rawChainId, 16);
 
-      // Enforce GenLayer
-      if (!SUPPORTED_CHAINS[numericChainId]) {
-        await switchChain(genlayerBradbury.id);
-        setStatus("idle");
-        return;
-      }
-
-      const client = createClient(provider, addresses[0], numericChainId);
+      const { wallet, pub, chainDef } = buildClients(provider, addresses[0], numericChainId);
 
       setAccount(addresses[0]);
-      setWalletClient(client);
+      setWalletClient(wallet);
+      setPublicClient(pub);
+      setChain(chainDef);
       setChainId(numericChainId);
       setStatus("connected");
 
@@ -144,14 +145,54 @@ export const useWallet = () => {
       const message =
         err?.code === 4001
           ? "Connection rejected by user."
-          : err?.message ?? "Connection error.";
-
+          : err?.message ?? "Connection failed.";
       setError(message);
       setStatus("error");
     }
-  }, [createClient, switchChain]);
+  }, [buildClients]);
 
-  // ── Events ────────────────────────────────────────────────────────────────
+  // ── Sign Message (EIP-191) ────────────────────────────────────────────────
+
+  const signMessage = useCallback(
+    async (message) => {
+      if (!walletClient) throw new Error("Wallet not connected.");
+      return walletClient.signMessage({ message });
+    },
+    [walletClient]
+  );
+
+  // ── Sign Typed Data (EIP-712) ─────────────────────────────────────────────
+
+  const signTypedData = useCallback(
+    async ({ domain, types, primaryType, message }) => {
+      if (!walletClient) throw new Error("Wallet not connected.");
+      return walletClient.signTypedData({ domain, types, primaryType, message });
+    },
+    [walletClient]
+  );
+
+  // ── Send Transaction ──────────────────────────────────────────────────────
+
+  const sendTransaction = useCallback(
+    async ({ to, value, data }) => {
+      if (!walletClient) throw new Error("Wallet not connected.");
+      return walletClient.sendTransaction({ to, value, data });
+    },
+    [walletClient]
+  );
+
+  // ── Write Contract ────────────────────────────────────────────────────────
+  // Pass a viem writeContract config: { address, abi, functionName, args, value? }
+
+  const writeContract = useCallback(
+    async (contractConfig) => {
+      if (!walletClient) throw new Error("Wallet not connected.");
+      return walletClient.writeContract(contractConfig);
+    },
+    [walletClient]
+  );
+
+  // ── Wallet Events ─────────────────────────────────────────────────────────
 
   useEffect(() => {
     const provider = getProvider();
@@ -159,22 +200,20 @@ export const useWallet = () => {
 
     const handleAccountsChanged = (accounts) => {
       if (!accounts.length) return disconnect();
+      const { wallet, pub, chainDef } = buildClients(provider, accounts[0], chainId);
       setAccount(accounts[0]);
-
-      setWalletClient(createClient(provider, accounts[0], chainId));
+      setWalletClient(wallet);
+      setPublicClient(pub);
+      setChain(chainDef);
     };
 
     const handleChainChanged = (newChainId) => {
       const numeric = parseInt(newChainId, 16);
-
-      if (!SUPPORTED_CHAINS[numeric]) {
-        setError("Please switch to GenLayer Bradbury Testnet.");
-        setStatus("error");
-        return;
-      }
-
+      const { wallet, pub, chainDef } = buildClients(provider, account, numeric);
       setChainId(numeric);
-      setWalletClient(createClient(provider, account, numeric));
+      setWalletClient(wallet);
+      setPublicClient(pub);
+      setChain(chainDef);
     };
 
     provider.on("accountsChanged", handleAccountsChanged);
@@ -184,7 +223,7 @@ export const useWallet = () => {
       provider.removeListener("accountsChanged", handleAccountsChanged);
       provider.removeListener("chainChanged", handleChainChanged);
     };
-  }, [account, chainId, createClient, disconnect]);
+  }, [account, chainId, buildClients, disconnect]);
 
   // ── Auto Reconnect ────────────────────────────────────────────────────────
 
@@ -192,38 +231,47 @@ export const useWallet = () => {
     const provider = getProvider();
     if (!provider) return;
 
-    const reconnect = async () => {
-      const wasConnected = localStorage.getItem("walletConnected");
-      if (!wasConnected) return;
+    const tryReconnect = async () => {
+      if (!localStorage.getItem("walletConnected")) return;
 
       const accounts = await provider.request({ method: "eth_accounts" });
       if (!accounts.length) return;
 
       const rawChainId = await provider.request({ method: "eth_chainId" });
       const numericChainId = parseInt(rawChainId, 16);
-
-      if (!SUPPORTED_CHAINS[numericChainId]) return;
-
-      const client = createClient(provider, accounts[0], numericChainId);
+      const { wallet, pub, chainDef } = buildClients(provider, accounts[0], numericChainId);
 
       setAccount(accounts[0]);
-      setWalletClient(client);
+      setWalletClient(wallet);
+      setPublicClient(pub);
+      setChain(chainDef);
       setChainId(numericChainId);
       setStatus("connected");
     };
 
-    reconnect();
-  }, [createClient]);
+    tryReconnect();
+  }, [buildClients]);
 
   return {
+    // State
     account,
-    walletClient,
+    chain,
     chainId,
     status,
     error,
+    // Clients (for advanced use)
+    walletClient,
+    publicClient,
+    // Actions
     connect,
     disconnect,
     switchChain,
+    // Signing & transactions
+    signMessage,
+    signTypedData,
+    sendTransaction,
+    writeContract,
+    // Convenience
     shortAddress: shortenAddress(account),
     isConnected: status === "connected",
     isConnecting: status === "connecting",
@@ -231,7 +279,7 @@ export const useWallet = () => {
   };
 };
 
-// ─── UI ─────────────────────────────────────────────────────────────────────
+// ─── UI ───────────────────────────────────────────────────────────────────────
 
 export const WalletButton = () => {
   const {
@@ -240,8 +288,8 @@ export const WalletButton = () => {
     isConnected,
     isConnecting,
     shortAddress,
+    chain,
     error,
-    isSupportedChain,
   } = useWallet();
 
   return (
@@ -249,13 +297,10 @@ export const WalletButton = () => {
       {error && <p style={{ color: "red" }}>{error}</p>}
 
       {isConnected ? (
-        <div>
-          {!isSupportedChain && (
-            <p style={{ color: "orange" }}>
-              Switch to GenLayer Bradbury Testnet
-            </p>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {chain?.name && (
+            <span style={{ fontSize: "0.8em", color: "#888" }}>{chain.name}</span>
           )}
-
           <button onClick={disconnect} title="Disconnect wallet">
             {shortAddress}
           </button>

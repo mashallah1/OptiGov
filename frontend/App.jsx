@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import axios from "axios"
-import { useWallet, WalletButton } from "./usewallet.jsx";
+import { useWallet, WalletButton } from "./usewallet";
 import deployment from "./deployment.json"
 const API = "http://localhost:3000"
 
