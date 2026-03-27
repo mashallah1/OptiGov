@@ -62,51 +62,6 @@ export const useWallet = () => {
     });
   }, []);
 
-  // ── Connect ──────────────────────────────────────────────────────────────
-
-  const connect = useCallback(async () => {
-    setStatus("connecting");
-    setError(null);
-
-    const provider = getProvider();
-
-    if (!provider) {
-      setError("No wallet detected. Install MetaMask.");
-      setStatus("error");
-      return;
-    }
-
-    try {
-      const addresses = await provider.request({ method: "eth_requestAccounts" });
-      const rawChainId = await provider.request({ method: "eth_chainId" });
-      const numericChainId = parseInt(rawChainId, 16);
-
-      // Enforce GenLayer
-      if (!SUPPORTED_CHAINS[numericChainId]) {
-        await switchChain(genlayerBradbury.id);
-        setStatus("idle");
-        return;
-      }
-
-      const client = createClient(provider, addresses[0], numericChainId);
-
-      setAccount(addresses[0]);
-      setWalletClient(client);
-      setChainId(numericChainId);
-      setStatus("connected");
-
-      localStorage.setItem("walletConnected", "true");
-    } catch (err) {
-      const message =
-        err?.code === 4001
-          ? "Connection rejected by user."
-          : err?.message ?? "Connection error.";
-
-      setError(message);
-      setStatus("error");
-    }
-  }, [createClient]);
-
   // ── Disconnect ────────────────────────────────────────────────────────────
 
   const disconnect = useCallback(() => {
@@ -150,6 +105,51 @@ export const useWallet = () => {
       }
     }
   }, []);
+
+  // ── Connect ──────────────────────────────────────────────────────────────
+
+  const connect = useCallback(async () => {
+    setStatus("connecting");
+    setError(null);
+
+    const provider = getProvider();
+
+    if (!provider) {
+      setError("No wallet detected. Install MetaMask.");
+      setStatus("error");
+      return;
+    }
+
+    try {
+      const addresses = await provider.request({ method: "eth_requestAccounts" });
+      const rawChainId = await provider.request({ method: "eth_chainId" });
+      const numericChainId = parseInt(rawChainId, 16);
+
+      // Enforce GenLayer
+      if (!SUPPORTED_CHAINS[numericChainId]) {
+        await switchChain(genlayerBradbury.id);
+        setStatus("idle");
+        return;
+      }
+
+      const client = createClient(provider, addresses[0], numericChainId);
+
+      setAccount(addresses[0]);
+      setWalletClient(client);
+      setChainId(numericChainId);
+      setStatus("connected");
+
+      localStorage.setItem("walletConnected", "true");
+    } catch (err) {
+      const message =
+        err?.code === 4001
+          ? "Connection rejected by user."
+          : err?.message ?? "Connection error.";
+
+      setError(message);
+      setStatus("error");
+    }
+  }, [createClient, switchChain]);
 
   // ── Events ────────────────────────────────────────────────────────────────
 
