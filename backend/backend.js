@@ -7,6 +7,10 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
+import cors from "cors";
+app.use(cors({
+    origin: "https://opti-gov.vercel.app/"
+}));
 
 // ✅ Correct RPC
 const publicClient = createPublicClient({
