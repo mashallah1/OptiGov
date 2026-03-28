@@ -1,7 +1,7 @@
 import "dotenv/config";
-import express = "express";
-import { createClient, http } = from "genlayer";
-import { privateKeyToAccount } = from "viem/accounts";
+import express from "express";
+import { createClient, http } from "genlayer";
+import { privateKeyToAccount } from "viem/accounts";
 
 const app = express();
 const port = process.env.PORT || 3000;
