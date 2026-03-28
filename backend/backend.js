@@ -13,8 +13,11 @@ const publicClient = createPublicClient({
     transport: http("https://rpc.bradbury.genlayer.com")
 });
 
-const account = privateKeyToAccount(process.env.PRIVATE_KEY);
-const client = createWalletClient({
+if (!process.env.MY_PRIVATE_KEY) {
+    throw new Error("MY_PRIVATE_KEY environment variable is not set");
+}
+const account = privateKeyToAccount(process.env.MY_PRIVATE_KEY);
+const walletClient = createWalletClient({
     account,
     transport: http("https://rpc.bradbury.genlayer.com")
 });
