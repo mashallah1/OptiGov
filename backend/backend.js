@@ -1,6 +1,6 @@
 import "dotenv/config";
 import express from "express";
-import { createClient, http } from "genlayer";
+import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
 const app = express();
@@ -9,12 +9,15 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 
 // ✅ Correct RPC
-const client = createClient({
-    chain: "bradbury",
+const publicClient = createPublicClient({
     transport: http("https://rpc.bradbury.genlayer.com")
 });
 
-const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;
+const account = privateKeyToAccount(process.env.PRIVATE_KEY);
+const client = createWalletClient({
+    account,
+    transport: http("https://rpc.bradbury.genlayer.com")
+});
 
 // fallback state
 let state = {
@@ -29,7 +32,7 @@ let state = {
 app.get("/status", async (req, res) => {
     try {
         try {
-            const data = await client.readContract({
+            const data = await publicClient.readContract({
                 address: CONTRACT_ADDRESS,
                 functionName: "get_status",
                 args: [],
@@ -95,7 +98,7 @@ app.post("/vote", async (req, res) => {
 
         const account = privateKeyToAccount(process.env.PRIVATE_KEY);
 
-        await client.writeContract({
+        await walletClient.writeContract({
             address: CONTRACT_ADDRESS,
             functionName: "vote",
             args: [decision],
@@ -119,7 +122,7 @@ app.post("/challenge", async (req, res) => {
         state.challenged = true
         const account = privateKeyToAccount(process.env.PRIVATE_KEY);
 
-        await client.writeContract({
+        await walletClient.writeContract({
             address: CONTRACT_ADDRESS,
             functionName: "challenge",
             args: [],
@@ -143,7 +146,7 @@ app.post("/finalize", async (req, res) => {
         state.finalized = true;
         const account = privateKeyToAccount(process.env.PRIVATE_KEY);
 
-        await client.writeContract({
+        await walletClient.writeContract({
             address: CONTRACT_ADDRESS,
             functionName: "finalize",
             args: [],

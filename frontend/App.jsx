@@ -2,75 +2,46 @@ import { useEffect, useState } from "react"
 import axios from "axios"
 import { useWallet, WalletButton } from "./usewallet"
 import deployment from "./deployment.json"
+const [proposal, setProposal] = useState("")
 
 const API = "http://localhost:3000"
 
 function App() {
-  const { account, isConnected } = useWallet()
-  const [proposal, setProposal] = useState(deployment.proposal || "")
+  const { account, isConnected, connect } = useWallet()
   const [status_msg, setStatus_msg] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
 
   const fetchStatus = async () => {
-    try {
-      const res = await axios.get(`${API}/status`)
-      setStatus_msg(res.data.data || res.data)
-    } catch (err) {
-      setError("Failed to fetch status: " + err.message)
-    }
+    const res = await axios.get(`${API}/status`)
+    setStatus_msg(res.data.data || res.data)
   }
 
   const evaluate = async () => {
     setLoading(true)
-    setError(null)
-    try {
-      await axios.post(`${API}/evaluate`, { proposal })
-      await fetchStatus()
-    } catch (err) {
-      setError("Evaluate failed: " + err.message)
-    } finally {
-      setLoading(false)
-    }
+    await axios.post(`${API}/evaluate`)
+    await fetchStatus()
+    setLoading(false)
   }
 
   const vote = async (decision) => {
     setLoading(true)
-    setError(null)
-    try {
-      await axios.post(`${API}/vote`, { decision })
-      await fetchStatus()
-    } catch (err) {
-      setError("Vote failed: " + err.message)
-    } finally {
-      setLoading(false)
-    }
+    await axios.post(`${API}/vote`, { decision })
+    await fetchStatus()
+    setLoading(false)
   }
 
   const challenge = async () => {
     setLoading(true)
-    setError(null)
-    try {
-      await axios.post(`${API}/challenge`)
-      await fetchStatus()
-    } catch (err) {
-      setError("Challenge failed: " + err.message)
-    } finally {
-      setLoading(false)
-    }
+    await axios.post(`${API}/challenge`)
+    await fetchStatus()
+    setLoading(false)
   }
 
   const finalize = async () => {
     setLoading(true)
-    setError(null)
-    try {
-      await axios.post(`${API}/finalize`)
-      await fetchStatus()
-    } catch (err) {
-      setError("Finalize failed: " + err.message)
-    } finally {
-      setLoading(false)
-    }
+    await axios.post(`${API}/finalize`)
+    await fetchStatus()
+    setLoading(false)
   }
 
   useEffect(() => {
@@ -86,30 +57,30 @@ function App() {
         <WalletButton />
       </div>
 
-      {/* CONNECTED ACCOUNT */}
-      {isConnected && (
+      {/* WALLET */}
+      {!isConnected ? (
+        <button
+          onClick={connect}
+          className="bg-blue-600 px-6 py-3 rounded-xl hover:bg-blue-500 mb-6"
+        >
+          Connect Wallet
+        </button>
+      ) : (
         <p className="mb-6 text-slate-400">
           Connected: {account}
         </p>
       )}
 
-      {/* ERROR */}
-      {error && (
-        <p className="mb-4 text-red-400">{error}</p>
-      )}
-
-      {/* PROPOSAL INPUT */}
-      <div className="mb-6">
-        <textarea
+      {/* STATUS CARD */}
+      {status_msg && (
+        <div classNAme="mb-6">
+          <textarea
           placeholder="Enter your proposal here..."
           value={proposal}
           onChange={(e) => setProposal(e.target.value)}
-          className="w-full p-4 rounded-xl bg-slate-800 text-white border border-slate-700"
+          className="w-full p-4 mb-4 rounded-xl bg-slate-800 text-white border border-slate-800"
         />
-      </div>
-
-      {/* STATUS CARD */}
-      {status_msg && (
+        </div>
         <div className="bg-slate-900 p-6 rounded-2xl shadow-xl mb-8 border border-slate-800">
           <h2 className="text-xl font-semibold mb-3">Proposal Status</h2>
 
@@ -139,42 +110,37 @@ function App() {
 
         <button
           onClick={evaluate}
-          disabled={loading}
-          className="bg-purple-600 p-4 rounded-xl hover:bg-purple-500 disabled:opacity-50"
+          className="bg-purple-600 p-4 rounded-xl hover:bg-purple-500"
         >
-          🤖 Run AI Evaluation
+          🤖 Evaluate "Run AI Evaluation"
         </button>
 
         <button
           onClick={() => vote(1)}
-          disabled={loading}
-          className="bg-green-600 p-4 rounded-xl hover:bg-green-500 disabled:opacity-50"
+          className="bg-green-600 p-4 rounded-xl hover:bg-green-500"
         >
-          👍 Vote Approval
+          👍 Approve "Vote Approval"
         </button>
 
         <button
           onClick={() => vote(2)}
-          disabled={loading}
-          className="bg-red-600 p-4 rounded-xl hover:bg-red-500 disabled:opacity-50"
+          className="bg-red-600 p-4 rounded-xl hover:bg-red-500"
         >
-          👎 Vote Reject
+          👎 Reject "Vote Reject"
         </button>
 
         <button
           onClick={challenge}
-          disabled={loading}
-          className="bg-yellow-600 p-4 rounded-xl hover:bg-yellow-500 disabled:opacity-50"
+          className="bg-yellow-600 p-4 rounded-xl hover:bg-yellow-500"
         >
-          ⚔️ Dispute Result
+          ⚔️ Challenge "Dispute Result"
         </button>
 
         <button
           onClick={finalize}
-          disabled={loading}
-          className="bg-blue-600 p-4 rounded-xl hover:bg-blue-500 col-span-2 md:col-span-1 disabled:opacity-50"
+          className="bg-blue-600 p-4 rounded-xl hover:bg-blue-500 col-span-2 md:col-span-1"
         >
-          🏁 Finalise Decision
+          🏁 Finalize "Finalise Decision"
         </button>
       </div>
 
