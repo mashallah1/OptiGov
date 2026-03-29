@@ -1,13 +1,21 @@
 import { useEffect, useState } from "react"
-import { createClient } from "genlayer-js"
+import { createAccount, createClient } from "genlayer-js"
 import { testnetBradbury } from "genlayer-js/chains"
 import { TransactionStatus } from "genlayer-js/types"
 import { useWallet, WalletButton } from "./usewallet"
 
+const PRIVATE_KEY = import.meta.env.VITE_PRIVATE_KEY
 const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS
 
+const account = createAccount(PRIVATE_KEY)
+
+const client = createClient({
+  chain: testnetBradbury,
+  account: account,
+})
+
 function App() {
-  const { account, isConnected, connect } = useWallet()
+  const { account: walletAccount, isConnected, connect } = useWallet()
   const [status_msg, setStatus_msg] = useState(null)
   const [loading, setLoading] = useState(false)
   const [proposal, setProposal] = useState("")
