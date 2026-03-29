@@ -1,46 +1,54 @@
 import { useEffect, useState } from "react"
 import axios from "axios"
 import { useWallet, WalletButton } from "./usewallet"
-import deployment from "./deployment.json"
-const [proposal, setProposal] = useState("")
 
-const API = "http://localhost:3000"
+const API = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000"
 
 function App() {
   const { account, isConnected, connect } = useWallet()
   const [status_msg, setStatus_msg] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [proposal, setProposal] = useState("")
 
   const fetchStatus = async () => {
-    const res = await axios.get(`${API}/status`)
-    setStatus_msg(res.data.data || res.data)
+    try {
+      const res = await axios.get(`${API}/status`)
+      setStatus_msg(res.data.data || res.data)
+    } catch (err) {
+      console.error(err)
+    }
   }
 
   const evaluate = async () => {
     setLoading(true)
-    await axios.post(`${API}/evaluate`)
-    await fetchStatus()
+    try {
+      await axios.post(`${API}/evaluate`)
+      await fetchStatus()
+    } catch (err) {
+      console.error(err)
+    }
     setLoading(false)
   }
 
   const vote = async (decision) => {
     setLoading(true)
-    await axios.post(`${API}/vote`, { decision })
-    await fetchStatus()
-    setLoading(false)
-  }
-
-  const challenge = async () => {
-    setLoading(true)
-    await axios.post(`${API}/challenge`)
-    await fetchStatus()
+    try {
+      await axios.post(`${API}/vote`, { decision })
+      await fetchStatus()
+    } catch (err) {
+      console.error(err)
+    }
     setLoading(false)
   }
 
   const finalize = async () => {
     setLoading(true)
-    await axios.post(`${API}/finalize`)
-    await fetchStatus()
+    try {
+      await axios.post(`${API}/finalize`)
+      await fetchStatus()
+    } catch (err) {
+      console.error(err)
+    }
     setLoading(false)
   }
 
@@ -51,13 +59,11 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-white p-6">
 
-      {/* HEADER */}
       <div className="flex justify-between items-center mb-10">
         <h1 className="text-3xl font-bold">⚡ OptiGov</h1>
         <WalletButton />
       </div>
 
-      {/* WALLET */}
       {!isConnected ? (
         <button
           onClick={connect}
@@ -66,89 +72,55 @@ function App() {
           Connect Wallet
         </button>
       ) : (
-        <p className="mb-6 text-slate-400">
-          Connected: {account}
-        </p>
+        <p className="mb-6 text-slate-400">Connected: {account}</p>
       )}
 
-      {/* STATUS CARD */}
-      {status_msg && (
-        <div classNAme="mb-6">
-          <textarea
+      <div className="mb-6">
+        <textarea
           placeholder="Enter your proposal here..."
           value={proposal}
           onChange={(e) => setProposal(e.target.value)}
           className="w-full p-4 mb-4 rounded-xl bg-slate-800 text-white border border-slate-800"
         />
-        </div>
+      </div>
+
+      {status_msg && (
         <div className="bg-slate-900 p-6 rounded-2xl shadow-xl mb-8 border border-slate-800">
           <h2 className="text-xl font-semibold mb-3">Proposal Status</h2>
-
           <p className="text-lg mb-4">
-            Status: <span className="font-bold text-blue-400">{status_msg.status}</span>
+            Status: <span className="font-bold text-blue-400">{status_msg?.status}</span>
           </p>
-
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div className="bg-slate-800 p-3 rounded-xl">
-              Decision: <b>{status_msg.decision === 1 ? "Approve" : status_msg.decision === 2 ? "Reject" : "Pending"}</b>
+              Decision: <b>{status_msg?.decision === 1 ? "Approve" : status_msg?.decision === 2 ? "Reject" : "Pending"}</b>
             </div>
             <div className="bg-slate-800 p-3 rounded-xl">
-              Votes: <b>{status_msg.votes}</b>
+              Votes: <b>{status_msg?.votes}</b>
             </div>
             <div className="bg-slate-800 p-3 rounded-xl">
-              Finalized: {status_msg.finalized ? "✅" : "❌"}
-            </div>
-            <div className="bg-slate-800 p-3 rounded-xl">
-              Challenged: {status_msg.challenged ? "⚠️" : "❌"}
+              Finalized: {status_msg?.finalized ? "✅" : "❌"}
             </div>
           </div>
         </div>
       )}
 
-      {/* ACTIONS */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-
-        <button
-          onClick={evaluate}
-          className="bg-purple-600 p-4 rounded-xl hover:bg-purple-500"
-        >
-          🤖 Evaluate "Run AI Evaluation"
+        <button onClick={evaluate} className="bg-purple-600 p-4 rounded-xl hover:bg-purple-500">
+          🤖 Run AI Evaluation
         </button>
-
-        <button
-          onClick={() => vote(1)}
-          className="bg-green-600 p-4 rounded-xl hover:bg-green-500"
-        >
-          👍 Approve "Vote Approval"
+        <button onClick={() => vote(1)} className="bg-green-600 p-4 rounded-xl hover:bg-green-500">
+          👍 Approve
         </button>
-
-        <button
-          onClick={() => vote(2)}
-          className="bg-red-600 p-4 rounded-xl hover:bg-red-500"
-        >
-          👎 Reject "Vote Reject"
+        <button onClick={() => vote(2)} className="bg-red-600 p-4 rounded-xl hover:bg-red-500">
+          👎 Reject
         </button>
-
-        <button
-          onClick={challenge}
-          className="bg-yellow-600 p-4 rounded-xl hover:bg-yellow-500"
-        >
-          ⚔️ Challenge "Dispute Result"
-        </button>
-
-        <button
-          onClick={finalize}
-          className="bg-blue-600 p-4 rounded-xl hover:bg-blue-500 col-span-2 md:col-span-1"
-        >
-          🏁 Finalize "Finalise Decision"
+        <button onClick={finalize} className="bg-blue-600 p-4 rounded-xl hover:bg-blue-500 col-span-2 md:col-span-1">
+          🏁 Finalize
         </button>
       </div>
 
-      {/* LOADING */}
       {loading && (
-        <p className="mt-6 text-blue-400 animate-pulse">
-          Processing transaction...
-        </p>
+        <p className="mt-6 text-blue-400 animate-pulse">Processing transaction...</p>
       )}
     </div>
   )
