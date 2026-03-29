@@ -34,13 +34,12 @@ class OptiGov(gl.Contract):
     created_at: u256
     challenge_deadline: u256
 
-    authorized_voters: DynArray[str]
     log: DynArray[str]
 
     def __init__(self):
         caller = str(gl.message.sender_address)
 
-        self.proposal = "Test proposal"
+        self.proposal = "No proposal yet"
         self.proposer = caller
         self.owner = caller
 
@@ -55,46 +54,17 @@ class OptiGov(gl.Contract):
         self.vote_count = u256(0)
         self.votes = TreeMap[str, u256]()
 
-        # ❌ DO NOT use timestamp here
         self.created_at = u256(0)
         self.challenge_deadline = u256(0)
 
-        self.authorized_voters = DynArray[str]([caller])
         self.log = DynArray[str]()
-
         self._append_log("CREATED")
-
-    @gl.public.write
-    def set_proposal(self, text: str) -> bool:
-        self._only_owner()
-        assert len(text) > 0, "Proposal cannot be empty"
-        assert len(text) <= int(self.max_length), "Proposal too long"
-        assert "<script" not in text.lower(), "Invalid content"
-        
-        self.proposal = text
-        self.decision = DECISION_NEEDS_REVIEW
-        self.finalized = False
-        self.vote_count = u256(0)
-        self.votes = TreeMap[str, u256]()
-        self._append_log("PROPOSAL_UPDATED")
-        return True
-    # ───────── Helpers ─────────
 
     def _init_time_if_needed(self):
         if int(self.created_at) == 0:
             now = u256(gl.block.timestamp)
             self.created_at = now
             self.challenge_deadline = u256(int(now) + CHALLENGE_WINDOW)
-
-    def _only_owner(self):
-        assert gl.message.sender_address == self.owner, "Not owner"
-
-    def _only_voter(self):
-        found = False
-        for v in self.authorized_voters:
-            if v == gl.message.sender_address:
-                found = True
-        assert found, "Not authorized voter"
 
     def _not_finalized(self):
         assert not self.finalized, "Already finalized"
@@ -128,14 +98,28 @@ class OptiGov(gl.Contract):
             and "<script" not in p.lower()
         )
 
-    # ───────── Core ─────────
+    @gl.public.write
+    def set_proposal(self, text: str) -> bool:
+        self._not_finalized()
+        assert len(text) > 0, "Proposal cannot be empty"
+        assert len(text) <= int(self.max_length), "Proposal too long"
+        assert "<script" not in text.lower(), "Invalid content"
+
+        self.proposal = text
+        self.proposer = str(gl.message.sender_address)
+        self.decision = DECISION_NEEDS_REVIEW
+        self.finalized = False
+        self.vote_count = u256(0)
+        self.votes = TreeMap[str, u256]()
+        self.created_at = u256(0)
+        self.challenge_deadline = u256(0)
+        self._append_log("PROPOSAL_UPDATED")
+        return True
 
     @gl.public.write
     def evaluate(self) -> u256:
-
         self._init_time_if_needed()
         self._not_finalized()
-        self._only_voter()
 
         if int(self.decision) != 0:
             return self.decision
@@ -144,56 +128,63 @@ class OptiGov(gl.Contract):
             self.decision = DECISION_REJECT
             return self.decision
 
-        prompt = f"""Evaluate:
+        prompt = f"""Evaluate this governance proposal:
 
 {self.proposal}
 
-Return:
+Return ONLY valid JSON:
 {{"decision": 0|1|2}}
-"""
 
+0 = needs more review
+1 = accept
+2 = reject
+"""
         result = self._run_ai(prompt)
         self.decision = self._validate_ai_decision(result)
-
         return self.decision
 
     @gl.public.write
     def vote(self, my_decision: int) -> bool:
-
         self._init_time_if_needed()
         self._not_finalized()
-        self._only_voter()
 
-        assert my_decision in (1, 2), "Invalid decision"
+        assert my_decision in (1, 2), "Invalid decision: use 1=accept, 2=reject"
 
-        caller = gl.message.sender_address
-
+        caller = str(gl.message.sender_address)
         assert self.votes.get(caller) is None, "Already voted"
 
         self.votes[caller] = u256(my_decision)
         self.vote_count = u256(int(self.vote_count) + 1)
-
+        self._append_log(f"VOTE:{caller}")
         return True
 
     @gl.public.write
     def finalize(self) -> u256:
-
         self._init_time_if_needed()
         self._not_finalized()
-        self._only_voter()
+        assert int(self.vote_count) >= int(self.quorum), "Quorum not reached"
 
-        assert int(self.vote_count) >= int(self.quorum), "No quorum"
+        accept = 0
+        reject = 0
+        for voter in self.votes:
+            v = int(self.votes[voter])
+            if v == 1:
+                accept += 1
+            else:
+                reject += 1
 
+        self.decision = DECISION_ACCEPT if accept >= reject else DECISION_REJECT
         self.finalized = True
+        self._append_log("FINALIZED")
         return self.decision
-
-    # ───────── Views ─────────
 
     @gl.public.view
     def get_status(self) -> str:
         return json.dumps({
             "proposal": self.proposal,
+            "proposer": self.proposer,
             "decision": int(self.decision),
             "votes": int(self.vote_count),
             "finalized": self.finalized,
+            "challenged": self.challenged,
         })

@@ -7,7 +7,7 @@ A governance prototype combining AI-assisted evaluation with community voting, b
 * Frontend: https://opti-gov.vercel.app/
 * Backend API: https://optigov.onrender.com
 * Network: GenLayer Bradbury Testnet
-* Contract Address: 0xbedA9Fa3295AA6ea72f789618e1D0b5AA3D7F7B1
+* Contract Address: 0x6f3b0849c92e8A91DdDD304b5C616CBebfd137bE
 
 ## 🧠 Overview
 
