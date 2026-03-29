@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react"
-import { createAccount, createClient } from "genlayer-js"
-import { testnetBradbury } from "genlayer-js/chains"
-import { TransactionStatus } from "genlayer-js/types"
+import { createAccount, createClient, testnetBradbury, TransactionStatus } from "genlayer-js"
 import { useWallet, WalletButton } from "./usewallet"
 
 const PRIVATE_KEY = import.meta.env.VITE_PRIVATE_KEY
