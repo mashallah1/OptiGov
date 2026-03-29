@@ -64,6 +64,20 @@ class OptiGov(gl.Contract):
 
         self._append_log("CREATED")
 
+    @gl.public.write
+    def set_proposal(self, text: str) -> bool:
+        self._only_owner()
+        assert len(text) > 0, "Proposal cannot be empty"
+        assert len(text) <= int(self.max_length), "Proposal too long"
+        assert "<script" not in text.lower(), "Invalid content"
+        
+        self.proposal = text
+        self.decision = DECISION_NEEDS_REVIEW
+        self.finalized = False
+        self.vote_count = u256(0)
+        self.votes = TreeMap[str, u256]()
+        self._append_log("PROPOSAL_UPDATED")
+        return True
     # ───────── Helpers ─────────
 
     def _init_time_if_needed(self):

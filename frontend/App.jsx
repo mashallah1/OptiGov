@@ -19,13 +19,26 @@ function App() {
     }
   }
 
+  const submitProposal = async () => {
+    if (!proposal.trim()) return alert("Enter a proposal first!")
+    setLoading(true)
+    try {
+      await axios.post(`${API}/proposal`, { text: proposal })
+      await fetchStatus()
+      setProposal("")
+    } catch (err) {
+      alert("Failed to submit proposal")
+    }
+    setLoading(false)
+  }
+
   const evaluate = async () => {
     setLoading(true)
     try {
       await axios.post(`${API}/evaluate`)
       await fetchStatus()
     } catch (err) {
-      console.error(err)
+      alert(err.message)
     }
     setLoading(false)
   }
@@ -36,7 +49,7 @@ function App() {
       await axios.post(`${API}/vote`, { decision })
       await fetchStatus()
     } catch (err) {
-      console.error(err)
+      alert(err.message)
     }
     setLoading(false)
   }
@@ -47,7 +60,7 @@ function App() {
       await axios.post(`${API}/finalize`)
       await fetchStatus()
     } catch (err) {
-      console.error(err)
+      alert(err.message)
     }
     setLoading(false)
   }
@@ -75,24 +88,30 @@ function App() {
         <p className="mb-6 text-slate-400">Connected: {account}</p>
       )}
 
-      <div className="mb-6">
+      <div className="bg-slate-900 p-6 rounded-2xl mb-6 border border-slate-800">
+        <h2 className="text-xl font-semibold mb-3">📝 Submit Proposal</h2>
         <textarea
           placeholder="Enter your proposal here..."
           value={proposal}
           onChange={(e) => setProposal(e.target.value)}
-          className="w-full p-4 mb-4 rounded-xl bg-slate-800 text-white border border-slate-800"
+          className="w-full p-4 mb-4 rounded-xl bg-slate-800 text-white border border-slate-700 resize-none h-28"
         />
+        <button
+          onClick={submitProposal}
+          disabled={loading}
+          className="bg-indigo-600 px-6 py-3 rounded-xl hover:bg-indigo-500 disabled:opacity-50"
+        >
+          📨 Submit Proposal
+        </button>
       </div>
 
       {status_msg && (
         <div className="bg-slate-900 p-6 rounded-2xl shadow-xl mb-8 border border-slate-800">
-          <h2 className="text-xl font-semibold mb-3">Proposal Status</h2>
-          <p className="text-lg mb-4">
-            Status: <span className="font-bold text-blue-400">{status_msg?.status}</span>
-          </p>
+          <h2 className="text-xl font-semibold mb-3">📊 Proposal Status</h2>
+          <p className="text-slate-300 mb-4 italic">"{status_msg?.proposal}"</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div className="bg-slate-800 p-3 rounded-xl">
-              Decision: <b>{status_msg?.decision === 1 ? "Approve" : status_msg?.decision === 2 ? "Reject" : "Pending"}</b>
+              Decision: <b>{status_msg?.decision === 1 ? "✅ Approve" : status_msg?.decision === 2 ? "❌ Reject" : "⏳ Pending"}</b>
             </div>
             <div className="bg-slate-800 p-3 rounded-xl">
               Votes: <b>{status_msg?.votes}</b>
@@ -100,27 +119,46 @@ function App() {
             <div className="bg-slate-800 p-3 rounded-xl">
               Finalized: {status_msg?.finalized ? "✅" : "❌"}
             </div>
+            <div className="bg-slate-800 p-3 rounded-xl">
+              Challenged: {status_msg?.challenged ? "⚠️" : "❌"}
+            </div>
           </div>
         </div>
       )}
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <button onClick={evaluate} className="bg-purple-600 p-4 rounded-xl hover:bg-purple-500">
+        <button
+          onClick={evaluate}
+          disabled={loading}
+          className="bg-purple-600 p-4 rounded-xl hover:bg-purple-500 disabled:opacity-50"
+        >
           🤖 Run AI Evaluation
         </button>
-        <button onClick={() => vote(1)} className="bg-green-600 p-4 rounded-xl hover:bg-green-500">
+        <button
+          onClick={() => vote(1)}
+          disabled={loading}
+          className="bg-green-600 p-4 rounded-xl hover:bg-green-500 disabled:opacity-50"
+        >
           👍 Approve
         </button>
-        <button onClick={() => vote(2)} className="bg-red-600 p-4 rounded-xl hover:bg-red-500">
+        <button
+          onClick={() => vote(2)}
+          disabled={loading}
+          className="bg-red-600 p-4 rounded-xl hover:bg-red-500 disabled:opacity-50"
+        >
           👎 Reject
         </button>
-        <button onClick={finalize} className="bg-blue-600 p-4 rounded-xl hover:bg-blue-500 col-span-2 md:col-span-1">
+        <button
+          onClick={finalize}
+          disabled={loading}
+          className="bg-blue-600 p-4 rounded-xl hover:bg-blue-500 col-span-2 md:col-span-1 disabled:opacity-50"
+        >
           🏁 Finalize
         </button>
       </div>
 
       {loading && (
-        <p className="mt-6 text-blue-400 animate-pulse">Processing transaction...</p>
+        <p className="mt-6 text-blue-400 animate-pulse">⏳ Processing transaction...</p>
       )}
     </div>
   )

@@ -17,6 +17,7 @@ const contractABI = [
   { name: "evaluate", type: "function", inputs: [], outputs: [{ type: "uint256" }] },
   { name: "vote", type: "function", inputs: [{ name: "my_decision", type: "uint256" }], outputs: [{ type: "bool" }] },
   { name: "finalize", type: "function", inputs: [], outputs: [{ type: "uint256" }] },
+  { name: "set_proposal", type: "function", inputs: [{ name: "proposal", type: "string" }], outputs: [] }
 ];
 
 const publicClient = createPublicClient({
@@ -116,6 +117,22 @@ app.post("/finalize", async (req, res) => {
   }
 });
 
+app.post("/proposal", async (req, res) => {
+  try {
+    const { text } = req.body;
+
+    const hash = await walletClient.writeContract({
+      address: CONTRACT_ADDRESS,
+      abi: contractABI,
+      functionName: "set_proposal",
+      args: [text],
+    });
+
+    res.json({ success: true, hash });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 app.listen(port, () => {
   console.log(`🚀 OptiGov running on port ${port}`);
 });
