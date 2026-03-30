@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 
 const shortenAddress = (addr) =>
   addr ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : "";
