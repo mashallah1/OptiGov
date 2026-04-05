@@ -29,14 +29,14 @@ const glWrite = async (functionName, args = []) => {
     value: 0,
   });
   const receipt = await client.waitForTransactionReceipt({
-    hash: txHash,
-    status: TransactionStatus.ACCEPTED,
-  });
+  hash: txHash,
+  status: TransactionStatus.FINALIZED,
+});
   return receipt;
 };
 
 const glRead = async (functionName, args = []) => {
-  return await client.callContractFunction({
+  return await client.readContract({
     address: CONTRACT_ADDRESS,
     functionName,
     args,
