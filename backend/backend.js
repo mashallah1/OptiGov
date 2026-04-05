@@ -13,10 +13,7 @@ app.use(cors({ origin: "https://opti-gov.vercel.app" }));
 
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;
 
-const client = createClient({ 
-  network: testnetBradbury,
-  endpoint: "https://rpc.bradbury.genlayer.com"
-});
+const client = createClient({ chain: testnetBradbury });
 const account = createAccount(process.env.PRIVATE_KEY);
 
 const glWrite = async (functionName, args = []) => {
