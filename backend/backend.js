@@ -36,6 +36,7 @@ const glRead = async (functionName, args = []) => {
     address: CONTRACT_ADDRESS,
     functionName,
     args,
+    stateStatus: "accepted",
   });
 };
 
