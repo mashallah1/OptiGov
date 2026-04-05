@@ -79,7 +79,7 @@ app.post("/proposal", async (req, res) => {
       return res.status(400).json({ success: false, error: "Proposal text is required" });
     }
     const receipt = await glWrite("set_proposal", [text]);
-    state.proposal = text;
+    if (state) state.proposal = text;
     res.json({ success: true, receipt });
   } catch (err) {
     console.error("Proposal error:", err);
