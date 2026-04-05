@@ -28,12 +28,7 @@ const glWrite = async (functionName, args = []) => {
     args,
     value: 0,
   });
-  const receipt = await client.waitForTransactionReceipt({
-  hash: txHash,
-  status: TransactionStatus.ACCEPTED,
-  timeout: 120000, // 2 minutes
-});
-  return receipt;
+  return { txHash };
 };
 
 const glRead = async (functionName, args = []) => {
