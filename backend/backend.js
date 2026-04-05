@@ -17,10 +17,7 @@ app.set("json replacer", (key, value) =>
 
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;
 
-const client = createClient({ 
-  chain: testnetBradbury,
-  endpoint: "https://rpc-bradbury.genlayer.com"
-});
+const client = createClient({ chain: testnetBradbury });
 const account = createAccount(process.env.PRIVATE_KEY);
 
 const glWrite = async (functionName, args = []) => {
@@ -35,21 +32,12 @@ const glWrite = async (functionName, args = []) => {
 };
 
 const glRead = async (functionName, args = []) => {
-  const response = await fetch("https://rpc-bradbury.genlayer.com", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      method: "gen_call",
-      params: [{
-        to: CONTRACT_ADDRESS,
-        data: { function: functionName, args },
-      }, "latest"],
-      id: 1,
-    }),
+  return await client.readContract({
+    address: CONTRACT_ADDRESS,
+    functionName,
+    args,
+    stateStatus: "accepted",
   });
-  const json = await response.json();
-  return json.result;
 };
 
 let state = {
