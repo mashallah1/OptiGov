@@ -11,6 +11,10 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 app.use(cors({ origin: "https://opti-gov.vercel.app" }));
 
+app.set("json replacer", (key, value) =>
+  typeof value === "bigint" ? value.toString() : value
+);
+
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;
 
 const client = createClient({ chain: testnetBradbury });
@@ -32,7 +36,7 @@ const glWrite = async (functionName, args = []) => {
 };
 
 const glRead = async (functionName, args = []) => {
-  return await client.readContract({
+  return await client.callContractFunction({
     address: CONTRACT_ADDRESS,
     functionName,
     args,
